@@ -974,7 +974,7 @@ local Run = function(Bool: boolean, Callback: () -> ())
 end
 
 -- Module
-local Suite = Environment().Suite or loadstring(game:HttpGet("https://waterxjuice.neocities.org/RBXMSuitSave.txt"))()
+local Suite = Environment().Suite or loadstring(game:HttpGet("https://raw.githubusercontent.com/izepx/script-saving/refs/heads/main/RBXMSuitSave.txt"))()
 local Legacy = (function()
 	local Path do
 		if (Developer) then
@@ -996,7 +996,7 @@ RobloxGui.Enabled = false
 RobloxGui.NotificationFrame.Parent = LegacyGui
 
 Run(Settings.OldConsole == true, function()
-	loadstring(game:HttpGet("https://waterxjuice.neocities.org/LegacyConsoleSave.txt"))()
+	loadstring(game:HttpGet("https://raw.githubusercontent.com/izepx/script-saving/refs/heads/main/LegacyConsoleSave.txt"))()
 end)
 
 Run(Settings.OldGraphics == true, function()
