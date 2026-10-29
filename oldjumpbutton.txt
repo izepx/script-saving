@@ -1,0 +1,101 @@
+-- old jump button texture
+local Players = game:GetService("Players")
+local RunService = game:GetService("RunService")
+
+local LocalPlayer = Players.LocalPlayer
+local PlayerGui = LocalPlayer:WaitForChild("PlayerGui", 5)
+
+-- Custom asset IDs via rbxthumb
+local NORMAL_TEXTURE = "rbxthumb://type=Asset&id=128594480893243&w=420&h=420"
+local PRESSED_TEXTURE = "rbxthumb://type=Asset&id=93465617564980&w=420&h=420"
+
+-- Hardware GPU cache to keep textures instantly ready
+local textureCacheScreen = PlayerGui:FindFirstChild("JumpTextureCache")
+if textureCacheScreen then textureCacheScreen:Destroy() end
+
+textureCacheScreen = Instance.new("ScreenGui")
+textureCacheScreen.Name = "JumpTextureCache"
+
+local cache1 = Instance.new("ImageLabel")
+cache1.Image = NORMAL_TEXTURE
+cache1.Size = UDim2.new(0, 1, 0, 1)
+cache1.Position = UDim2.new(0, -10, 0, -10)
+cache1.Parent = textureCacheScreen
+
+local cache2 = Instance.new("ImageLabel")
+cache2.Image = PRESSED_TEXTURE
+cache2.Size = UDim2.new(0, 1, 0, 1)
+cache2.Position = UDim2.new(0, -10, 0, -10)
+cache2.Parent = textureCacheScreen
+
+textureCacheScreen.Parent = PlayerGui
+
+local loopConnection = nil
+local inputBeganConn, inputEndedConn
+
+local function cleanupConnections()
+	if loopConnection then loopConnection:Disconnect(); loopConnection = nil end
+	if inputBeganConn then inputBeganConn:Disconnect(); inputBeganConn = nil end
+	if inputEndedConn then inputEndedConn:Disconnect(); inputEndedConn = nil end
+end
+
+local function startForcedOverrideLoop()
+	cleanupConnections()
+
+	local touchGui = PlayerGui:WaitForChild("TouchGui", 5)
+	local touchControlFrame = touchGui and touchGui:WaitForChild("TouchControlFrame", 5)
+	local jumpButton = touchControlFrame and touchControlFrame:WaitForChild("JumpButton", 5)
+
+	if jumpButton and jumpButton:IsA("ImageButton") then
+		-- Create our clean visual overlay
+		local visualOverlay = jumpButton:FindFirstChild("FakeClassicJump")
+		if not visualOverlay then
+			visualOverlay = Instance.new("ImageLabel")
+			visualOverlay.Name = "FakeClassicJump"
+			visualOverlay.Size = UDim2.new(1, 0, 1, 0)
+			visualOverlay.Position = UDim2.new(0, 0, 0, 0)
+			visualOverlay.BackgroundTransparency = 1
+			visualOverlay.ScaleType = Enum.ScaleType.Stretch
+			visualOverlay.Image = NORMAL_TEXTURE
+			visualOverlay.ZIndex = jumpButton.ZIndex + 1
+			visualOverlay.Parent = jumpButton
+		end
+
+		-- Microsecond direct input tracking for flawless swaps
+		inputBeganConn = jumpButton.InputBegan:Connect(function(input)
+			if input.UserInputType == Enum.UserInputType.Touch or input.UserInputType == Enum.UserInputType.MouseButton1 then
+				visualOverlay.Image = PRESSED_TEXTURE
+			end
+		end)
+
+		inputEndedConn = jumpButton.InputEnded:Connect(function(input)
+			if input.UserInputType == Enum.UserInputType.Touch or input.UserInputType == Enum.UserInputType.MouseButton1 then
+				visualOverlay.Image = NORMAL_TEXTURE
+			end
+		end)
+
+		-- Strict frame loop ONLY to force visibility hidden and kill round corners
+		loopConnection = RunService.Heartbeat:Connect(function()
+			if jumpButton and jumpButton.Parent and visualOverlay then
+				jumpButton.ImageTransparency = 1
+				jumpButton.BackgroundTransparency = 1
+				
+				local uiCorner = jumpButton:FindFirstChildOfClass("UICorner")
+				if uiCorner then uiCorner:Destroy() end
+			else
+				cleanupConnections()
+			end
+		end)
+	end
+end
+
+-- Monitor for TouchGui recreation
+PlayerGui.ChildAdded:Connect(function(child)
+	if child.Name == "TouchGui" then
+		task.wait(0.1)
+		startForcedOverrideLoop()
+	end
+end)
+
+-- Run immediately
+startForcedOverrideLoop()
